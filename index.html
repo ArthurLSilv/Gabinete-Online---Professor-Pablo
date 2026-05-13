@@ -969,7 +969,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
                 const data = await res.json();
                 if (data?.data?.url) {
                     const link = data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
-                    links.push(`${file.name}: ${link}`);
+                    links.push(link);
                 }
             } catch { /* se um arquivo falhar, continua com os outros */ }
         }
