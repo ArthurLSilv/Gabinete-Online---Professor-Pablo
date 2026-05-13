@@ -956,14 +956,36 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     btn.disabled = true;
     btn.innerHTML = '⏳ Enviando…';
 
+    /* ── UPLOAD DE IMAGENS ── */
+    let linksEvidencias = '';
+    if (selectedFiles.length > 0) {
+        btn.innerHTML = '⏳ Enviando imagens…';
+        const links = [];
+        for (const file of selectedFiles) {
+            try {
+                const fd = new FormData();
+                fd.append('file', file, file.name);
+                const res  = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data?.data?.url) {
+                    const link = data.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                    links.push(`${file.name}: ${link}`);
+                }
+            } catch { /* se um arquivo falhar, continua com os outros */ }
+        }
+        linksEvidencias = links.length > 0 ? links.join('\n') : 'Falha ao enviar imagens.';
+        btn.innerHTML = '⏳ Registrando demanda…';
+    }
+
     const templateParams = {
-        nome:      nome,
-        telefone:  tel,
-        categoria: catEl.value,
-        detalhes:  detalhes,
-        endereco:  document.getElementById('addr').value,
-        latitude:  document.getElementById('lat').value  || '',
-        longitude: document.getElementById('lng').value  || ''
+        nome:        nome,
+        telefone:    tel,
+        categoria:   catEl.value,
+        detalhes:    detalhes,
+        endereco:    document.getElementById('addr').value,
+        latitude:    document.getElementById('lat').value  || '',
+        longitude:   document.getElementById('lng').value  || '',
+        evidencias:  linksEvidencias || 'Nenhuma imagem enviada'
     };
 
     try {
@@ -972,6 +994,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
         } else {
             const fd = new FormData();
             Object.entries(templateParams).forEach(([k, v]) => fd.append(k, v));
+            fd.append('Evidencias', linksEvidencias || 'Nenhuma imagem enviada');
             fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
             fd.append('_template', 'table');
             fd.append('_captcha',  'false');
