@@ -7,9 +7,11 @@
     <title>Gabinete Digital | Prof. Pablo — Vereador Guarapuava/PR</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- EmailJS carregado no head para garantir disponibilidade -->
+    <!-- EmailJS -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/index.min.js"></script>
-    <script>emailjs.init('qIt2GEhCJGQ4Nl8rF');</script>
+    <script>
+        try { emailjs.init('qIt2GEhCJGQ4Nl8rF'); } catch(e) {}
+    </script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -940,10 +942,24 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     };
 
     try {
-        await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
+        if (typeof emailjs !== 'undefined') {
+            await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
+        } else {
+            const fd = new FormData();
+            Object.entries(templateParams).forEach(([k, v]) => fd.append(k, v));
+            fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
+            fd.append('_template', 'table');
+            fd.append('_captcha',  'false');
+            const res  = await fetch('https://formsubmit.co/ajax/engs-arthursilva@camporeal.edu.br', {
+                method: 'POST', headers: { Accept: 'application/json' }, body: fd
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!(data.success === 'true' || data.success === true))
+                throw new Error(data.message || 'Erro no envio.');
+        }
         document.getElementById('modal').classList.add('show');
     } catch (err) {
-        alert('Erro ao enviar: ' + (err.text || err.message || JSON.stringify(err)));
+        alert('Erro ao enviar: ' + (err.text || err.message || 'Tente novamente.'));
     } finally {
         btn.disabled = false;
         btn.innerHTML = '✅ Registrar Demanda';
