@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gabinete Digital do Vereador Prof. Pablo - Guarapuava/PR. Registre demandas e problemas da sua comunidade diretamente ao gabinete.">
+    <title>Gabinete Digital | Prof. Pablo — Vereador Guarapuava/PR</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary:       #0a2463;
+            --primary-light: #1e3a8a;
+            --accent:        #f59e0b;
+            --bg:            #f0f4f8;
+            --card:          #ffffff;
+            --text:          #1a202c;
+            --text-light:    #64748b;
+            --border:        #e2e8f0;
+            --danger:        #ef4444;
+            --success:       #10b981;
+            --shadow:        0 4px 6px -1px rgba(0,0,0,.10), 0 2px 4px -1px rgba(0,0,0,.06);
+            --shadow-lg:     0 10px 15px -3px rgba(0,0,0,.10), 0 4px 6px -2px rgba(0,0,0,.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* ── HERO ── */
+        .hero {
+            background:
+                linear-gradient(140deg, rgba(5,26,64,.82) 0%, rgba(10,36,99,.78) 45%, rgba(30,58,138,.75) 100%),
+                url('background.jpg') center/cover no-repeat;
+            color: #fff;
+            padding: 48px 20px 70px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 60% 0%, rgba(255,255,255,.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 100px;
+            padding: 5px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .6px;
+            text-transform: uppercase;
+            margin-bottom: 22px;
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-avatar {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 4px solid rgba(255,255,255,.45);
+            box-shadow: 0 4px 24px rgba(0,0,0,.35);
+            margin: 0 auto 20px;
+            overflow: hidden;
+            background: rgba(255,255,255,.12);
+        }
+        .hero-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero h1 {
+            font-size: clamp(28px, 6vw, 48px);
+            font-weight: 800;
+            letter-spacing: -.5px;
+            margin-bottom: 8px;
+        }
+        .hero h1 span { color: #fbbf24; }
+
+        .hero-subtitle {
+            font-size: 16px;
+            font-weight: 400;
+            opacity: .82;
+            margin-bottom: 6px;
+        }
+
+        .hero-city {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+            opacity: .68;
+        }
+
+        /* ── STEPS ── */
+        .steps-wrap {
+            max-width: 900px;
+            margin: -34px auto 0;
+            padding: 0 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .steps-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 24px;
+            box-shadow: var(--shadow-lg);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .step { text-align: center; padding: 8px; }
+
+        .step-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #0a2463, #1e3a8a);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin: 0 auto 12px;
+        }
+
+        .step-num {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+
+        .step h3 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+        .step p  { font-size: 12px; color: var(--text-light); line-height: 1.55; }
+
+        /* ── MAIN ── */
+        .main {
+            max-width: 720px;
+            margin: 40px auto 0;
+            padding: 0 20px 60px;
+        }
+
+        .section-title    { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+        .section-subtitle { font-size: 14px; color: var(--text-light); text-align: center; margin-bottom: 32px; }
+
+        /* ── CARD ── */
+        .fcard {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+        }
+
+        .fcard-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .fcard-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .fcard-title { font-size: 15px; font-weight: 700; }
+        .fcard-desc  { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+        /* ── INPUTS ── */
+        label.field-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 7px;
+        }
+        label.field-label .req { color: var(--danger); margin-left: 2px; }
+
+        input[type="text"],
+        input[type="tel"],
+        textarea {
+            width: 100%;
+            padding: 11px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: #fff;
+            outline: none;
+            transition: border-color .18s, box-shadow .18s;
+        }
+        input[type="text"]:focus,
+        input[type="tel"]:focus,
+        textarea:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(30,58,138,.10);
+        }
+        textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .fgroup { margin-bottom: 14px; }
+        .fgroup:last-child { margin-bottom: 0; }
+
+        /* ── GPS / MAP ── */
+        .loc-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+        .gps-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            padding: 13px 20px;
+            background: linear-gradient(135deg, #0a2463, #1e3a8a);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: opacity .18s, transform .1s;
+            width: 100%;
+        }
+        .gps-btn:hover  { opacity: .9; }
+        .gps-btn:active { transform: scale(.98); }
+        .gps-btn.busy   { opacity: .65; cursor: wait; }
+
+        .or-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+        .or-divider::before,
+        .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        .addr-row { display: flex; gap: 8px; }
+        .addr-search-btn {
+            flex-shrink: 0;
+            padding: 11px 14px;
+            background: #f1f5f9;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 17px;
+            transition: background .18s;
+        }
+        .addr-search-btn:hover { background: #e2e8f0; }
+
+        #map {
+            height: 230px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            display: none;
+        }
+
+        .loc-result {
+            display: none;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 11px 14px;
+            background: #f0fdf4;
+            border: 1.5px solid #86efac;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #15803d;
+            line-height: 1.5;
+        }
+        .loc-result.show { display: flex; }
+
+        /* ── SELECT ── */
+        .select-wrap { position: relative; }
+
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--text-light);
+            pointer-events: none;
+        }
+
+        select {
+            width: 100%;
+            padding: 11px 38px 11px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background: #fff;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            transition: border-color .18s, box-shadow .18s;
+        }
+        select:focus {
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(30,58,138,.10);
+        }
+        select option[value=""] { color: var(--text-light); }
+
+        /* ── FILE UPLOAD ── */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            transition: all .18s;
+        }
+        .upload-zone:hover,
+        .upload-zone.over { border-color: var(--primary-light); background: #eff6ff; }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-ico   { font-size: 34px; margin-bottom: 10px; }
+        .upload-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+        .upload-hint  { font-size: 12px; color: var(--text-light); }
+
+        .file-previews { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 100px;
+            font-size: 12px;
+            color: var(--primary-light);
+            font-weight: 500;
+            max-width: 220px;
+        }
+        .file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .file-chip button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--text-light);
+            line-height: 1;
+            flex-shrink: 0;
+            padding: 0;
+        }
+
+        /* ── LGPD ── */
+        .lgpd-box {
+            display: flex;
+            gap: 10px;
+            padding: 14px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+        .lgpd-box .ico { font-size: 18px; flex-shrink: 0; }
+
+        .check-wrap {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            margin-top: 14px;
+        }
+        .check-wrap input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--primary-light);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .check-wrap span { font-size: 13px; color: var(--text-light); }
+
+        /* ── SUBMIT ── */
+        .submit-btn {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(135deg, #0a2463, #1e3a8a);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: transform .18s, box-shadow .18s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            margin-top: 6px;
+        }
+        .submit-btn:hover    { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(10,36,99,.38); }
+        .submit-btn:active   { transform: translateY(0); }
+        .submit-btn:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ── SUCCESS MODAL ── */
+        .modal-bg {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.5);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-bg.show { display: flex; }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 48px 36px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            animation: popUp .35s ease;
+        }
+        @keyframes popUp {
+            from { transform: scale(.88) translateY(20px); opacity: 0; }
+            to   { transform: scale(1)   translateY(0);    opacity: 1; }
+        }
+
+        .modal-ico {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            margin: 0 auto 22px;
+        }
+
+        .modal-title { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
+        .modal-text  { font-size: 14px; color: var(--text-light); line-height: 1.65; margin-bottom: 28px; }
+
+        .modal-btn {
+            padding: 13px 30px;
+            background: linear-gradient(135deg, #0a2463, #1e3a8a);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: opacity .18s;
+        }
+        .modal-btn:hover { opacity: .88; }
+
+        /* ── FOOTER ── */
+        footer {
+            text-align: center;
+            padding: 36px 20px;
+            font-size: 13px;
+            color: var(--text-light);
+            border-top: 1px solid var(--border);
+        }
+        footer strong { color: var(--text); }
+        footer p + p  { margin-top: 4px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 600px) {
+            .steps-card  { grid-template-columns: 1fr; }
+            .cat-grid    { grid-template-columns: 1fr; }
+            .form-row    { grid-template-columns: 1fr; }
+            .modal-card  { padding: 36px 24px; }
+            .hero        { padding: 34px 20px 56px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════ HERO ══════════════ -->
+<header class="hero">
+    <div class="hero-badge">🏛️ Gabinete Digital</div>
+    <div class="hero-avatar">
+        <img src="fotoperfil.png" alt="Prof. Pablo — Vereador de Guarapuava/PR">
+    </div>
+    <h1>Prof. <span>Pablo</span></h1>
+    <p class="hero-subtitle">Vereador pela Câmara Municipal de Guarapuava</p>
+    <p class="hero-city">📍 Guarapuava — Paraná</p>
+</header>
+
+<!-- ══════════════ PASSOS ══════════════ -->
+<section class="steps-wrap">
+    <div class="steps-card">
+        <div class="step">
+            <div class="step-icon">📍</div>
+            <div class="step-num">Passo 1</div>
+            <h3>Localize o problema</h3>
+            <p>Use o GPS ou busque o endereço diretamente no mapa</p>
+        </div>
+        <div class="step">
+            <div class="step-icon">📋</div>
+            <div class="step-num">Passo 2</div>
+            <h3>Descreva a situação</h3>
+            <p>Selecione o tipo de demanda e detalhe o problema</p>
+        </div>
+        <div class="step">
+            <div class="step-icon">✅</div>
+            <div class="step-num">Passo 3</div>
+            <h3>Registre a demanda</h3>
+            <p>Anexe evidências e informe seus dados de contato</p>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════ FORMULÁRIO ══════════════ -->
+<main class="main">
+    <h2 class="section-title">Registrar Demanda</h2>
+    <p class="section-subtitle">Preencha o formulário abaixo — nossa equipe irá acompanhar o seu caso</p>
+
+    <form id="form" novalidate>
+
+        <!-- LOCALIZAÇÃO -->
+        <div class="fcard">
+            <div class="fcard-head">
+                <div class="fcard-icon">📍</div>
+                <div>
+                    <div class="fcard-title">Onde é o problema?</div>
+                    <div class="fcard-desc">Informe o local exato da ocorrência</div>
+                </div>
+            </div>
+
+            <div class="loc-wrap">
+                <button type="button" class="gps-btn" id="gpsBtn" onclick="getGPS()">
+                    📡 Usar minha localização atual
+                </button>
+
+                <div class="or-divider">ou informe o endereço</div>
+
+                <div class="addr-row">
+                    <input type="text" id="addrInput" placeholder="Ex: Rua XV de Novembro, 123 — Guarapuava/PR">
+                    <button type="button" class="addr-search-btn" onclick="searchAddr()" title="Buscar endereço">🔍</button>
+                </div>
+
+                <div class="loc-result" id="locResult">
+                    <span>✅</span>
+                    <span id="locText">Localização definida</span>
+                </div>
+
+                <div id="map"></div>
+            </div>
+
+            <input type="hidden" id="lat"  name="latitude">
+            <input type="hidden" id="lng"  name="longitude">
+            <input type="hidden" id="addr" name="endereco">
+        </div>
+
+        <!-- TIPO DE DEMANDA -->
+        <div class="fcard">
+            <div class="fcard-head">
+                <div class="fcard-icon">🗂️</div>
+                <div>
+                    <div class="fcard-title">Qual é a demanda? <span style="color:var(--danger)">*</span></div>
+                    <div class="fcard-desc">Selecione o tipo de problema a ser reportado</div>
+                </div>
+            </div>
+
+            <div class="select-wrap">
+                <select id="categoria" name="categoria">
+                    <option value="" disabled selected>Selecione o tipo de demanda…</option>
+                    <option value="🕳️ Buraco / Rua">🕳️ Buraco / Rua</option>
+                    <option value="🌿 Mato Alto / Limpeza">🌿 Mato Alto / Limpeza</option>
+                    <option value="💡 Iluminação Pública">💡 Iluminação Pública</option>
+                    <option value="🏥 Saúde / Postinho">🏥 Saúde / Postinho</option>
+                    <option value="👮 Segurança Pública">👮 Segurança Pública</option>
+                    <option value="💬 Outro Assunto">💬 Outro Assunto</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- DETALHES -->
+        <div class="fcard">
+            <div class="fcard-head">
+                <div class="fcard-icon">📝</div>
+                <div>
+                    <div class="fcard-title">Detalhe a situação</div>
+                    <div class="fcard-desc">Descreva o problema com o máximo de detalhes possível</div>
+                </div>
+            </div>
+            <div class="fgroup">
+                <label class="field-label" for="detalhes">Descrição <span class="req">*</span></label>
+                <textarea id="detalhes" name="detalhes"
+                    placeholder="Ex: Há um buraco grande na calçada próximo ao nº 150. Está causando risco de acidentes há mais de 3 meses e já houve queda de idosos no local..."></textarea>
+            </div>
+        </div>
+
+        <!-- EVIDÊNCIAS -->
+        <div class="fcard">
+            <div class="fcard-head">
+                <div class="fcard-icon">📎</div>
+                <div>
+                    <div class="fcard-title">Evidências</div>
+                    <div class="fcard-desc">Anexe fotos, vídeos ou documentos (opcional)</div>
+                </div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+                <input type="file" id="fileInput" name="arquivos" multiple
+                       accept="image/*,video/*,.pdf"
+                       onchange="handleFiles(this.files)">
+                <div class="upload-ico">📸</div>
+                <div class="upload-title">Clique ou arraste os arquivos aqui</div>
+                <div class="upload-hint">Fotos, vídeos ou PDFs · Máx. 10 MB no total</div>
+            </div>
+            <div class="file-previews" id="filePreviews"></div>
+        </div>
+
+        <!-- CONTATO -->
+        <div class="fcard">
+            <div class="fcard-head">
+                <div class="fcard-icon">👤</div>
+                <div>
+                    <div class="fcard-title">Dados para contato</div>
+                    <div class="fcard-desc">Para acompanharmos o andamento da sua demanda</div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="fgroup">
+                    <label class="field-label" for="nome">Nome completo <span class="req">*</span></label>
+                    <input type="text" id="nome" name="nome" placeholder="Seu nome completo" autocomplete="name">
+                </div>
+                <div class="fgroup">
+                    <label class="field-label" for="tel">Telefone / WhatsApp <span class="req">*</span></label>
+                    <input type="tel" id="tel" name="telefone" placeholder="(42) 99999-9999" autocomplete="tel">
+                </div>
+            </div>
+
+            <div class="lgpd-box">
+                <span class="ico">🔒</span>
+                <span>Seus dados são utilizados <strong>exclusivamente</strong> para contato sobre esta demanda, conforme a <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>. Não compartilhamos suas informações com terceiros.</span>
+            </div>
+
+            <label class="check-wrap" for="lgpd">
+                <input type="checkbox" id="lgpd">
+                <span>Li e concordo com o uso dos meus dados conforme a política de privacidade</span>
+            </label>
+        </div>
+
+        <!-- BOTÃO -->
+        <button type="submit" class="submit-btn" id="submitBtn">
+            ✅ Registrar Demanda
+        </button>
+    </form>
+</main>
+
+<!-- ══════════════ MODAL SUCESSO ══════════════ -->
+<div class="modal-bg" id="modal">
+    <div class="modal-card">
+        <div class="modal-ico">✅</div>
+        <h2 class="modal-title">Demanda Registrada!</h2>
+        <p class="modal-text">Sua demanda foi registrada com sucesso. A equipe do Prof. Pablo irá analisar e entrar em contato em breve. Obrigado por contribuir com Guarapuava!</p>
+        <button class="modal-btn" onclick="closeModal()">Registrar outra demanda</button>
+    </div>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer>
+    <p><strong>Prof. Pablo</strong> — Vereador de Guarapuava/PR</p>
+    <p>Câmara Municipal de Guarapuava · Gabinete Digital</p>
+</footer>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ── MAP STATE ── */
+let map = null, pin = null;
+let selectedFiles = [];
+
+function initMap(lat, lng) {
+    const el = document.getElementById('map');
+    el.style.display = 'block';
+
+    if (!map) {
+        map = L.map('map').setView([lat, lng], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+        map.on('click', e => {
+            placePin(e.latlng.lat, e.latlng.lng);
+            reverseGeocode(e.latlng.lat, e.latlng.lng);
+        });
+    } else {
+        map.setView([lat, lng], 16);
+    }
+
+    if (pin) map.removeLayer(pin);
+    pin = L.marker([lat, lng], {
+        icon: L.divIcon({
+            html: '<div style="width:36px;height:36px;background:#1e3a8a;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;font-size:17px;">📍</div>',
+            iconSize: [36, 36], iconAnchor: [18, 18], className: ''
+        })
+    }).addTo(map);
+
+    setTimeout(() => map.invalidateSize(), 100);
+}
+
+function placePin(lat, lng) {
+    document.getElementById('lat').value = lat;
+    document.getElementById('lng').value = lng;
+}
+
+/* ── GPS ── */
+function getGPS() {
+    if (!navigator.geolocation) { alert('Geolocalização não suportada neste dispositivo.'); return; }
+    const btn = document.getElementById('gpsBtn');
+    btn.classList.add('busy');
+    btn.textContent = '⏳ Obtendo localização…';
+
+    navigator.geolocation.getCurrentPosition(
+        async pos => {
+            const { latitude: lat, longitude: lng } = pos.coords;
+            placePin(lat, lng);
+            initMap(lat, lng);
+            await reverseGeocode(lat, lng);
+            btn.classList.remove('busy');
+            btn.innerHTML = '📡 Usar minha localização atual';
+        },
+        err => {
+            btn.classList.remove('busy');
+            btn.innerHTML = '📡 Usar minha localização atual';
+            const msg = err.code === 1
+                ? 'Permissão de localização negada. Habilite nas configurações do navegador.'
+                : 'Não foi possível obter a localização. Tente buscar pelo endereço.';
+            alert(msg);
+        },
+        { enableHighAccuracy: true, timeout: 12000 }
+    );
+}
+
+/* ── REVERSE GEOCODE ── */
+async function reverseGeocode(lat, lng) {
+    try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=pt-BR`);
+        const d = await r.json();
+        const a = d.address || {};
+        const label = [a.road, a.house_number, a.suburb, a.city || a.town || 'Guarapuava']
+            .filter(Boolean).join(', ') + (a.state ? '/PR' : '');
+        showLocResult(label || d.display_name);
+        document.getElementById('addr').value = d.display_name || `${lat},${lng}`;
+        document.getElementById('addrInput').value = label || d.display_name || '';
+    } catch {
+        showLocResult(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+    }
+}
+
+/* ── ADDRESS SEARCH ── */
+async function searchAddr() {
+    const q = document.getElementById('addrInput').value.trim();
+    if (!q) return;
+    try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Guarapuava, PR, Brasil')}&limit=1&accept-language=pt-BR`);
+        const d = await r.json();
+        if (!d.length) { alert('Endereço não encontrado. Tente ser mais específico.'); return; }
+        const { lat, lon, display_name } = d[0];
+        placePin(+lat, +lon);
+        initMap(+lat, +lon);
+        showLocResult(display_name);
+        document.getElementById('addr').value = display_name;
+    } catch {
+        alert('Erro ao buscar endereço. Verifique sua conexão.');
+    }
+}
+
+document.getElementById('addrInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); searchAddr(); }
+});
+
+function showLocResult(text) {
+    document.getElementById('locText').textContent = text;
+    document.getElementById('locResult').classList.add('show');
+}
+
+/* ── FILE UPLOAD ── */
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('drop',      e => {
+    e.preventDefault();
+    zone.classList.remove('over');
+    handleFiles(e.dataTransfer.files);
+});
+
+const MAX_TOTAL_MB = 10;
+
+function totalSizeMB() {
+    return selectedFiles.reduce((acc, f) => acc + f.size, 0) / (1024 * 1024);
+}
+
+function handleFiles(files) {
+    Array.from(files).forEach(f => {
+        if (selectedFiles.find(x => x.name === f.name && x.size === f.size)) return;
+        const newTotal = (selectedFiles.reduce((acc, x) => acc + x.size, 0) + f.size) / (1024 * 1024);
+        if (newTotal > MAX_TOTAL_MB) {
+            alert(`⚠️ Limite de ${MAX_TOTAL_MB} MB atingido!\n\n"${f.name}" não foi adicionado.\nRemova algum arquivo antes de incluir novos.`);
+            return;
+        }
+        selectedFiles.push(f);
+    });
+    renderPreviews();
+}
+
+function renderPreviews() {
+    const wrap = document.getElementById('filePreviews');
+    wrap.innerHTML = '';
+    selectedFiles.forEach((f, i) => {
+        const ico  = f.type.startsWith('image/') ? '🖼️' : f.type.startsWith('video/') ? '🎥' : '📄';
+        const name = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
+        const chip = document.createElement('div');
+        chip.className = 'file-chip';
+        chip.innerHTML = `${ico} <span>${name}</span> <button type="button" onclick="removeFile(${i})" title="Remover">×</button>`;
+        wrap.appendChild(chip);
+    });
+    if (selectedFiles.length > 0) {
+        const used = totalSizeMB();
+        const pct  = Math.min(used / MAX_TOTAL_MB * 100, 100);
+        const color = pct > 85 ? '#ef4444' : pct > 60 ? '#f59e0b' : '#10b981';
+        const info = document.createElement('div');
+        info.style.cssText = `width:100%;margin-top:6px;font-size:12px;color:${color};font-weight:600;`;
+        info.textContent = `${used.toFixed(2)} MB de ${MAX_TOTAL_MB} MB usados`;
+        wrap.appendChild(info);
+    }
+}
+
+function removeFile(i) {
+    selectedFiles.splice(i, 1);
+    renderPreviews();
+}
+
+/* ── PHONE MASK ── */
+document.getElementById('tel').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    if      (v.length > 6) v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`;
+    else if (v.length > 2) v = `(${v.slice(0,2)}) ${v.slice(2)}`;
+    else if (v.length)     v = `(${v}`;
+    this.value = v;
+});
+
+/* ── FORM SUBMIT ── */
+document.getElementById('form').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const nome     = document.getElementById('nome').value.trim();
+    const tel      = document.getElementById('tel').value.trim();
+    const detalhes = document.getElementById('detalhes').value.trim();
+    const catEl    = document.getElementById('categoria');
+    const lgpd     = document.getElementById('lgpd').checked;
+
+    if (!nome)                                     { alert('Por favor, informe seu nome.');               document.getElementById('nome').focus();     return; }
+    if (!tel || tel.replace(/\D/g,'').length < 10) { alert('Por favor, informe um telefone válido.');    document.getElementById('tel').focus();      return; }
+    if (!detalhes)                                 { alert('Por favor, descreva a situação.');            document.getElementById('detalhes').focus(); return; }
+    if (!catEl.value)                              { alert('Por favor, selecione o tipo de demanda.');   catEl.focus(); return; }
+    if (!lgpd)                                     { alert('Por favor, aceite os termos de privacidade.'); return; }
+    if (totalSizeMB() > MAX_TOTAL_MB)              { alert(`O total dos arquivos excede ${MAX_TOTAL_MB} MB.\nRemova alguns antes de enviar.`); return; }
+
+    if (!document.getElementById('addr').value)
+        document.getElementById('addr').value = document.getElementById('addrInput').value || 'Nao informado';
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enviando…';
+
+    const fd = new FormData();
+    fd.append('Nome',      nome);
+    fd.append('Telefone',  tel);
+    fd.append('Categoria', catEl.value);
+    fd.append('Detalhes',  detalhes);
+    fd.append('Endereco',  document.getElementById('addr').value);
+    fd.append('Latitude',  document.getElementById('lat').value  || '');
+    fd.append('Longitude', document.getElementById('lng').value  || '');
+    fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
+    fd.append('_template', 'table');
+    fd.append('_captcha',  'false');
+
+    try {
+        const res  = await fetch('https://formsubmit.co/ajax/engs-arthursilva@camporeal.edu.br', {
+            method: 'POST', headers: { Accept: 'application/json' }, body: fd
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.success === 'true' || data.success === true) {
+            document.getElementById('modal').classList.add('show');
+        } else {
+            alert('Erro ao enviar: ' + (data.message || 'tente novamente.'));
+        }
+    } catch (err) {
+        alert('Falha de conexão: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Registrar Demanda';
+    }
+});
+
+/* ── CLOSE MODAL ── */
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    document.getElementById('form').reset();
+    selectedFiles = [];
+    renderPreviews();
+    document.getElementById('locResult').classList.remove('show');
+    document.getElementById('map').style.display = 'none';
+    if (pin && map) { map.removeLayer(pin); pin = null; }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
