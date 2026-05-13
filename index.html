@@ -977,15 +977,20 @@ document.getElementById('form').addEventListener('submit', async function (e) {
         btn.innerHTML = '⏳ Registrando demanda…';
     }
 
+    const lat = document.getElementById('lat').value;
+    const lng = document.getElementById('lng').value;
+    const mapsLink = lat && lng
+        ? `https://www.google.com/maps?q=${lat},${lng}`
+        : 'Localização não informada';
+
     const templateParams = {
-        nome:        nome,
-        telefone:    tel,
-        categoria:   catEl.value,
-        detalhes:    detalhes,
-        endereco:    document.getElementById('addr').value,
-        latitude:    document.getElementById('lat').value  || '',
-        longitude:   document.getElementById('lng').value  || '',
-        evidencias:  linksEvidencias || 'Nenhuma imagem enviada'
+        nome:       nome,
+        telefone:   tel,
+        categoria:  catEl.value,
+        detalhes:   detalhes,
+        endereco:   document.getElementById('addr').value || 'Não informado',
+        localizacao: mapsLink,
+        evidencias: linksEvidencias || 'Nenhuma imagem enviada'
     };
 
     try {
