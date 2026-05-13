@@ -719,9 +719,13 @@
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- EmailJS -->
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/build/index.min.js"></script>
 <script>
-    emailjs.init('qIt2GEhCJGQ4Nl8rF');
+    (function() {
+        if (typeof emailjs !== 'undefined') {
+            emailjs.init('qIt2GEhCJGQ4Nl8rF');
+        }
+    })();
 </script>
 <script>
 /* ── MAP STATE ── */
@@ -932,10 +936,14 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     };
 
     try {
+        if (typeof emailjs === 'undefined') {
+            throw new Error('EmailJS não carregou. Tente novamente em poucos segundos.');
+        }
         await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
         document.getElementById('modal').classList.add('show');
     } catch (err) {
         alert('Erro ao enviar: ' + err.message);
+        console.error('EmailJS Error:', err);
     } finally {
         btn.disabled = false;
         btn.innerHTML = '✅ Registrar Demanda';
