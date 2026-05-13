@@ -564,12 +564,7 @@
     <h2 class="section-title">Registrar Demanda</h2>
     <p class="section-subtitle">Preencha o formulário abaixo — nossa equipe irá acompanhar o seu caso</p>
 
-    <form id="form" action="https://formsubmit.co/engs-arthursilva@camporeal.edu.br"
-          method="POST" enctype="multipart/form-data" novalidate>
-        <input type="hidden" name="_subject"  value="Nova Demanda - Gabinete Prof. Pablo">
-        <input type="hidden" name="_template" value="table">
-        <input type="hidden" name="_captcha"  value="false">
-        <input type="hidden" name="_next"     value="https://gabineteprofpablo.netlify.app/obrigado.html">
+    <form id="form" novalidate>
 
         <!-- LOCALIZAÇÃO -->
         <div class="fcard">
@@ -897,6 +892,8 @@ document.getElementById('tel').addEventListener('input', function () {
     this.value = v;
 });
 
+const WEB3FORMS_KEY = 'fa68a800-a7db-4063-bda9-53536b470cb3';
+
 /* ── FORM SUBMIT ── */
 document.getElementById('form').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -917,16 +914,36 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     if (!document.getElementById('addr').value)
         document.getElementById('addr').value = document.getElementById('addrInput').value || 'Nao informado';
 
-    /* sincroniza arquivos JS → input real */
-    if (selectedFiles.length > 0 && typeof DataTransfer !== 'undefined') {
-        const dt = new DataTransfer();
-        selectedFiles.forEach(f => dt.items.add(f));
-        document.getElementById('fileInput').files = dt.files;
-    }
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Enviando…';
 
-    document.getElementById('submitBtn').disabled = true;
-    document.getElementById('submitBtn').innerHTML = '⏳ Enviando…';
-    this.submit();
+    const fd = new FormData();
+    fd.append('access_key', WEB3FORMS_KEY);
+    fd.append('subject',    'Nova Demanda - Gabinete Prof. Pablo');
+    fd.append('Nome',       nome);
+    fd.append('Telefone',   tel);
+    fd.append('Categoria',  catEl.value);
+    fd.append('Detalhes',   detalhes);
+    fd.append('Endereco',   document.getElementById('addr').value);
+    fd.append('Latitude',   document.getElementById('lat').value  || '');
+    fd.append('Longitude',  document.getElementById('lng').value  || '');
+    selectedFiles.forEach(f => fd.append('attachment', f, f.name));
+
+    try {
+        const res  = await fetch('https://api.web3forms.com/submit', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('modal').classList.add('show');
+        } else {
+            alert('Erro ao enviar: ' + (data.message || 'tente novamente.'));
+        }
+    } catch (err) {
+        alert('Falha de conexão: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✅ Registrar Demanda';
+    }
 });
 
 /* ── CLOSE MODAL ── */
