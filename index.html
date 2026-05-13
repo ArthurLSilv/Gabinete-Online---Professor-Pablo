@@ -506,6 +506,29 @@
         }
         .modal-btn:hover { opacity: .88; }
 
+        /* ── ANÔNIMO ── */
+        .anon-wrap {
+            padding: 12px 14px;
+            background: #f8fafc;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            transition: all .18s;
+        }
+        .anon-wrap:has(input:checked) {
+            border-color: var(--primary-light);
+            background: #eff6ff;
+        }
+        .contato-fields {
+            overflow: hidden;
+            max-height: 400px;
+            transition: max-height .35s ease, opacity .25s ease;
+            opacity: 1;
+        }
+        .contato-fields.hidden {
+            max-height: 0;
+            opacity: 0;
+        }
+
         /* ── FOOTER ── */
         footer {
             text-align: center;
@@ -644,7 +667,6 @@
                     placeholder="Ex: Há um buraco grande na calçada próximo ao nº 150. Está causando risco de acidentes há mais de 3 meses e já houve queda de idosos no local..."></textarea>
             </div>
         </div>
-
         <!-- EVIDÊNCIAS -->
         <div class="fcard">
             <div class="fcard-head">
@@ -676,26 +698,33 @@
                 </div>
             </div>
 
-            <div class="form-row">
-                <div class="fgroup">
-                    <label class="field-label" for="nome">Nome completo <span class="req">*</span></label>
-                    <input type="text" id="nome" name="nome" placeholder="Seu nome completo" autocomplete="name">
-                </div>
-                <div class="fgroup">
-                    <label class="field-label" for="tel">Telefone / WhatsApp <span class="req">*</span></label>
-                    <input type="tel" id="tel" name="telefone" placeholder="(42) 99999-9999" autocomplete="tel">
-                </div>
-            </div>
-
-            <div class="lgpd-box">
-                <span class="ico">🔒</span>
-                <span>Seus dados são utilizados <strong>exclusivamente</strong> para contato sobre esta demanda, conforme a <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>. Não compartilhamos suas informações com terceiros.</span>
-            </div>
-
-            <label class="check-wrap" for="lgpd">
-                <input type="checkbox" id="lgpd">
-                <span>Li e concordo com o uso dos meus dados conforme a política de privacidade</span>
+            <label class="check-wrap anon-wrap" for="anonimo">
+                <input type="checkbox" id="anonimo" onchange="toggleAnonimo(this.checked)">
+                <span>🕵️ Enviar anonimamente (sem informar nome e telefone)</span>
             </label>
+
+            <div id="contatoFields" class="contato-fields">
+                <div class="form-row" style="margin-top:16px;">
+                    <div class="fgroup">
+                        <label class="field-label" for="nome">Nome completo <span class="req">*</span></label>
+                        <input type="text" id="nome" name="nome" placeholder="Seu nome completo" autocomplete="name">
+                    </div>
+                    <div class="fgroup">
+                        <label class="field-label" for="tel">Telefone / WhatsApp <span class="req">*</span></label>
+                        <input type="tel" id="tel" name="telefone" placeholder="(42) 99999-9999" autocomplete="tel">
+                    </div>
+                </div>
+
+                <div class="lgpd-box" style="margin-top:14px;">
+                    <span class="ico">🔒</span>
+                    <span>Seus dados são utilizados <strong>exclusivamente</strong> para contato sobre esta demanda, conforme a <strong>LGPD — Lei nº 13.709/2018</strong>. Não compartilhamos suas informações com terceiros.</span>
+                </div>
+
+                <label class="check-wrap" for="lgpd" style="margin-top:14px;">
+                    <input type="checkbox" id="lgpd">
+                    <span>Li e concordo com o uso dos meus dados conforme a política de privacidade</span>
+                </label>
+            </div>
         </div>
 
         <!-- BOTÃO -->
@@ -888,6 +917,11 @@ function removeFile(i) {
     renderPreviews();
 }
 
+/* ── ANÔNIMO TOGGLE ── */
+function toggleAnonimo(isAnon) {
+    document.getElementById('contatoFields').classList.toggle('hidden', isAnon);
+}
+
 /* ── PHONE MASK ── */
 document.getElementById('tel').addEventListener('input', function () {
     let v = this.value.replace(/\D/g, '').slice(0, 11);
@@ -901,18 +935,19 @@ document.getElementById('tel').addEventListener('input', function () {
 document.getElementById('form').addEventListener('submit', async function (e) {
     e.preventDefault();
 
-    const nome     = document.getElementById('nome').value.trim();
-    const tel      = document.getElementById('tel').value.trim();
+    const anonimo  = document.getElementById('anonimo').checked;
+    const nome     = anonimo ? 'Anônimo' : document.getElementById('nome').value.trim();
+    const tel      = anonimo ? 'Não informado' : document.getElementById('tel').value.trim();
     const detalhes = document.getElementById('detalhes').value.trim();
     const catEl    = document.getElementById('categoria');
-    const lgpd     = document.getElementById('lgpd').checked;
+    const lgpd     = anonimo || document.getElementById('lgpd').checked;
 
-    if (!nome)                                     { alert('Por favor, informe seu nome.');               document.getElementById('nome').focus();     return; }
-    if (!tel || tel.replace(/\D/g,'').length < 10) { alert('Por favor, informe um telefone válido.');    document.getElementById('tel').focus();      return; }
-    if (!detalhes)                                 { alert('Por favor, descreva a situação.');            document.getElementById('detalhes').focus(); return; }
-    if (!catEl.value)                              { alert('Por favor, selecione o tipo de demanda.');   catEl.focus(); return; }
-    if (!lgpd)                                     { alert('Por favor, aceite os termos de privacidade.'); return; }
-    if (totalSizeMB() > MAX_TOTAL_MB)              { alert(`O total dos arquivos excede ${MAX_TOTAL_MB} MB.\nRemova alguns antes de enviar.`); return; }
+    if (!anonimo && !nome)                                     { alert('Por favor, informe seu nome.');               document.getElementById('nome').focus();     return; }
+    if (!anonimo && (!tel || tel.replace(/\D/g,'').length < 10)) { alert('Por favor, informe um telefone válido.');  document.getElementById('tel').focus();      return; }
+    if (!detalhes)                                             { alert('Por favor, descreva a situação.');            document.getElementById('detalhes').focus(); return; }
+    if (!catEl.value)                                          { alert('Por favor, selecione o tipo de demanda.');   catEl.focus(); return; }
+    if (!lgpd)                                                 { alert('Por favor, aceite os termos de privacidade.'); return; }
+    if (totalSizeMB() > MAX_TOTAL_MB)                          { alert(`O total dos arquivos excede ${MAX_TOTAL_MB} MB.\nRemova alguns antes de enviar.`); return; }
 
     if (!document.getElementById('addr').value)
         document.getElementById('addr').value = document.getElementById('addrInput').value || 'Nao informado';
