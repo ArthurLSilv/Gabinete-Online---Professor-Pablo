@@ -7,6 +7,9 @@
     <title>Gabinete Digital | Prof. Pablo — Vereador Guarapuava/PR</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- EmailJS carregado no head para garantir disponibilidade -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/index.min.js"></script>
+    <script>emailjs.init('qIt2GEhCJGQ4Nl8rF');</script>
     <style>
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -926,30 +929,21 @@ document.getElementById('form').addEventListener('submit', async function (e) {
         longitude: document.getElementById('lng').value  || ''
     };
 
-    const fd = new FormData();
-    fd.append('Nome',      nome);
-    fd.append('Telefone',  tel);
-    fd.append('Categoria', catEl.value);
-    fd.append('Detalhes',  detalhes);
-    fd.append('Endereco',  document.getElementById('addr').value);
-    fd.append('Latitude',  document.getElementById('lat').value  || '');
-    fd.append('Longitude', document.getElementById('lng').value  || '');
-    fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
-    fd.append('_template', 'table');
-    fd.append('_captcha',  'false');
+    const templateParams = {
+        nome:      nome,
+        telefone:  tel,
+        categoria: catEl.value,
+        detalhes:  detalhes,
+        endereco:  document.getElementById('addr').value,
+        latitude:  document.getElementById('lat').value  || '',
+        longitude: document.getElementById('lng').value  || ''
+    };
 
     try {
-        const res  = await fetch('https://formsubmit.co/ajax/engs-arthursilva@camporeal.edu.br', {
-            method: 'POST', headers: { Accept: 'application/json' }, body: fd
-        });
-        const data = await res.json().catch(() => ({}));
-        if (data.success === 'true' || data.success === true) {
-            document.getElementById('modal').classList.add('show');
-        } else {
-            alert('Erro ao enviar. Tente novamente.');
-        }
+        await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
+        document.getElementById('modal').classList.add('show');
     } catch (err) {
-        alert('Erro de conexão. Tente novamente.');
+        alert('Erro ao enviar: ' + (err.text || err.message || JSON.stringify(err)));
     } finally {
         btn.disabled = false;
         btn.innerHTML = '✅ Registrar Demanda';
