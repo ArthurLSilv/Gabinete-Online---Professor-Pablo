@@ -609,12 +609,32 @@
                     📡 Usar minha localização atual
                 </button>
 
-                <div class="or-divider">ou informe o endereço</div>
+                <div class="or-divider">ou preencha o endereço manualmente</div>
 
-                <div class="addr-row">
-                    <input type="text" id="addrInput" placeholder="Ex: Rua XV de Novembro, 123 — Guarapuava/PR">
-                    <button type="button" class="addr-search-btn" onclick="searchAddr()" title="Buscar endereço">🔍</button>
+                <div class="fgroup">
+                    <label class="field-label" for="addrInput">Rua / Avenida <span class="req">*</span></label>
+                    <input type="text" id="addrInput" placeholder="Ex: Rua XV de Novembro">
                 </div>
+
+                <div class="form-row">
+                    <div class="fgroup">
+                        <label class="field-label" for="numInput">Número <span class="req">*</span></label>
+                        <input type="text" id="numInput" placeholder="Ex: 123">
+                    </div>
+                    <div class="fgroup">
+                        <label class="field-label" for="compInput">Complemento</label>
+                        <input type="text" id="compInput" placeholder="Apto, casa, bloco… (opcional)">
+                    </div>
+                </div>
+
+                <div class="fgroup">
+                    <label class="field-label" for="bairroInput">Bairro <span class="req">*</span></label>
+                    <input type="text" id="bairroInput" placeholder="Ex: Centro, Batel, Primavera…">
+                </div>
+
+                <button type="button" class="gps-btn" style="background:linear-gradient(135deg,#1e40af,#2563eb);" onclick="searchAddr()">
+                    🔍 Confirmar endereço no mapa
+                </button>
 
                 <div class="loc-result" id="locResult">
                     <span>✅</span>
@@ -821,39 +841,72 @@ function getGPS() {
 /* ── REVERSE GEOCODE ── */
 async function reverseGeocode(lat, lng) {
     try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=pt-BR`);
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&accept-language=pt-BR`);
         const d = await r.json();
         const a = d.address || {};
-        const label = [a.road, a.house_number, a.suburb, a.city || a.town || 'Guarapuava']
-            .filter(Boolean).join(', ') + (a.state ? '/PR' : '');
-        showLocResult(label || d.display_name);
-        document.getElementById('addr').value = d.display_name || `${lat},${lng}`;
-        document.getElementById('addrInput').value = label || d.display_name || '';
+        if (a.road)         document.getElementById('addrInput').value  = a.road;
+        if (a.house_number) document.getElementById('numInput').value   = a.house_number;
+        if (a.suburb || a.neighbourhood)
+                            document.getElementById('bairroInput').value = a.suburb || a.neighbourhood;
+        const fullLabel = [a.road, a.house_number, a.suburb || a.neighbourhood, a.city || a.town || 'Guarapuava'].filter(Boolean).join(', ') + '/PR';
+        showLocResult(fullLabel || d.display_name);
+        document.getElementById('addr').value = buildAddr();
     } catch {
         showLocResult(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
     }
 }
 
+/* ── BUILD FULL ADDRESS STRING ── */
+function buildAddr() {
+    const rua    = document.getElementById('addrInput').value.trim();
+    const num    = document.getElementById('numInput').value.trim();
+    const comp   = document.getElementById('compInput').value.trim();
+    const bairro = document.getElementById('bairroInput').value.trim();
+    return [rua, num ? `nº ${num}` : '', comp, bairro, 'Guarapuava/PR'].filter(Boolean).join(', ');
+}
+
 /* ── ADDRESS SEARCH ── */
 async function searchAddr() {
-    const q = document.getElementById('addrInput').value.trim();
-    if (!q) return;
+    const rua    = document.getElementById('addrInput').value.trim();
+    const num    = document.getElementById('numInput').value.trim();
+    const bairro = document.getElementById('bairroInput').value.trim();
+    if (!rua) { alert('Informe o nome da rua antes de buscar.'); return; }
     try {
-        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Guarapuava, PR, Brasil')}&limit=1&accept-language=pt-BR`);
-        const d = await r.json();
+        let d = [];
+        if (num) {
+            const r = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json` +
+                `&street=${encodeURIComponent(num + ' ' + rua)}` +
+                `&city=Guarapuava&state=Paran%C3%A1&country=Brasil` +
+                `&limit=3&accept-language=pt-BR`
+            );
+            d = await r.json();
+        }
+        if (!d.length) {
+            const q = [num ? `${rua}, ${num}` : rua, bairro].filter(Boolean).join(', ');
+            const r = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json` +
+                `&q=${encodeURIComponent(q + ', Guarapuava, PR, Brasil')}` +
+                `&limit=3&accept-language=pt-BR`
+            );
+            d = await r.json();
+        }
         if (!d.length) { alert('Endereço não encontrado. Tente ser mais específico.'); return; }
-        const { lat, lon, display_name } = d[0];
+        const { lat, lon } = d[0];
         placePin(+lat, +lon);
         initMap(+lat, +lon);
-        showLocResult(display_name);
-        document.getElementById('addr').value = display_name;
+        const full = buildAddr();
+        showLocResult(full);
+        document.getElementById('addr').value = full;
     } catch {
         alert('Erro ao buscar endereço. Verifique sua conexão.');
     }
 }
 
-document.getElementById('addrInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') { e.preventDefault(); searchAddr(); }
+['addrInput', 'numInput', 'bairroInput'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); searchAddr(); }
+    });
 });
 
 function showLocResult(text) {
@@ -949,8 +1002,8 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     if (!lgpd)                                                 { alert('Por favor, aceite os termos de privacidade.'); return; }
     if (totalSizeMB() > MAX_TOTAL_MB)                          { alert(`O total dos arquivos excede ${MAX_TOTAL_MB} MB.\nRemova alguns antes de enviar.`); return; }
 
-    if (!document.getElementById('addr').value)
-        document.getElementById('addr').value = document.getElementById('addrInput').value || 'Nao informado';
+    if (!document.getElementById('addr').value || document.getElementById('addrInput').value)
+        document.getElementById('addr').value = buildAddr() || 'Não informado';
 
     const btn = document.getElementById('submitBtn');
     btn.disabled = true;
@@ -994,9 +1047,16 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     };
 
     try {
+        let sent = false;
+
         if (typeof emailjs !== 'undefined') {
-            await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
-        } else {
+            try {
+                await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
+                sent = true;
+            } catch { /* EmailJS falhou — tenta FormSubmit abaixo */ }
+        }
+
+        if (!sent) {
             const fd = new FormData();
             Object.entries(templateParams).forEach(([k, v]) => fd.append(k, v));
             fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
@@ -1009,6 +1069,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
             if (!(data.success === 'true' || data.success === true))
                 throw new Error(data.message || 'Erro no envio.');
         }
+
         document.getElementById('modal').classList.add('show');
     } catch (err) {
         alert('Erro ao enviar: ' + (err.text || err.message || 'Tente novamente.'));
@@ -1022,6 +1083,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
 function closeModal() {
     document.getElementById('modal').classList.remove('show');
     document.getElementById('form').reset();
+    ['addrInput','numInput','compInput','bairroInput'].forEach(id => document.getElementById(id).value = '');
     selectedFiles = [];
     renderPreviews();
     document.getElementById('locResult').classList.remove('show');
