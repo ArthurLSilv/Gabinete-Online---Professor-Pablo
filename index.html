@@ -7,8 +7,8 @@
     <title>Gabinete Digital | Prof. Pablo — Vereador Guarapuava/PR</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- EmailJS -->
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/index.min.js"></script>
+    <!-- EmailJS (hospedado localmente para evitar bloqueio de CDN) -->
+    <script src="emailjs.min.js"></script>
     <script>
         try { emailjs.init('qIt2GEhCJGQ4Nl8rF'); } catch(e) {}
     </script>
@@ -1055,12 +1055,11 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     try {
         let sent = false;
 
-        console.log('EmailJS carregado:', typeof emailjs !== 'undefined');
         if (typeof emailjs !== 'undefined') {
             try {
                 await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
                 sent = true;
-            } catch(ejsErr) { console.error('EmailJS erro:', ejsErr?.status, ejsErr?.text || ejsErr?.message); }
+            } catch { /* EmailJS falhou — tenta Netlify Forms */ }
         }
 
         if (!sent) {
