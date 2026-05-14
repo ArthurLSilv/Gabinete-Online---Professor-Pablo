@@ -1055,6 +1055,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
     try {
         let sent = false;
 
+        console.log('EmailJS carregado:', typeof emailjs !== 'undefined');
         if (typeof emailjs !== 'undefined') {
             try {
                 await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
