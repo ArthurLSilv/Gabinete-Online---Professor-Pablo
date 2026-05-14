@@ -592,7 +592,8 @@
     <h2 class="section-title">Registrar Demanda</h2>
     <p class="section-subtitle">Preencha o formulário abaixo — nossa equipe irá acompanhar o seu caso</p>
 
-    <form id="form" novalidate>
+    <form id="form" name="gabinete-demanda" data-netlify="true" novalidate>
+        <input type="hidden" name="form-name" value="gabinete-demanda">
 
         <!-- LOCALIZAÇÃO -->
         <div class="fcard">
@@ -1053,21 +1054,18 @@ document.getElementById('form').addEventListener('submit', async function (e) {
             try {
                 await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
                 sent = true;
-            } catch { /* EmailJS falhou — tenta FormSubmit abaixo */ }
+            } catch { /* EmailJS falhou — tenta Netlify Forms */ }
         }
 
         if (!sent) {
-            const fd = new FormData();
-            Object.entries(templateParams).forEach(([k, v]) => fd.append(k, v));
-            fd.append('_subject',  'Nova Demanda - Gabinete Prof. Pablo');
-            fd.append('_template', 'table');
-            fd.append('_captcha',  'false');
-            const res  = await fetch('https://formsubmit.co/ajax/engs-arthursilva@camporeal.edu.br', {
-                method: 'POST', headers: { Accept: 'application/json' }, body: fd
+            const params = new URLSearchParams({ 'form-name': 'gabinete-demanda' });
+            Object.entries(templateParams).forEach(([k, v]) => params.append(k, v));
+            const res = await fetch('/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
             });
-            const data = await res.json().catch(() => ({}));
-            if (!(data.success === 'true' || data.success === true))
-                throw new Error(data.message || 'Erro no envio.');
+            if (!res.ok) throw new Error(`Erro ${res.status}`);
         }
 
         document.getElementById('modal').classList.add('show');
