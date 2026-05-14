@@ -645,9 +645,11 @@
                 <div id="map"></div>
             </div>
 
-            <input type="hidden" id="lat"  name="latitude">
-            <input type="hidden" id="lng"  name="longitude">
-            <input type="hidden" id="addr" name="endereco">
+            <input type="hidden" id="lat">
+            <input type="hidden" id="lng">
+            <input type="hidden" id="addr"         name="endereco">
+            <input type="hidden" id="hdnLocalizacao" name="localizacao">
+            <input type="hidden" id="hdnEvidencias"  name="evidencias">
         </div>
 
         <!-- TIPO DE DEMANDA -->
@@ -1046,6 +1048,9 @@ document.getElementById('form').addEventListener('submit', async function (e) {
         localizacao: mapsLink,
         evidencias: linksEvidencias || 'Nenhuma imagem enviada'
     };
+
+    document.getElementById('hdnLocalizacao').value = templateParams.localizacao;
+    document.getElementById('hdnEvidencias').value  = templateParams.evidencias;
 
     try {
         let sent = false;
