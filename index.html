@@ -1059,7 +1059,7 @@ document.getElementById('form').addEventListener('submit', async function (e) {
             try {
                 await emailjs.send('service_djmz1bo', 'template_qvfeog8', templateParams);
                 sent = true;
-            } catch { /* EmailJS falhou — tenta Netlify Forms */ }
+            } catch(ejsErr) { console.error('EmailJS erro:', ejsErr?.status, ejsErr?.text || ejsErr?.message); }
         }
 
         if (!sent) {
